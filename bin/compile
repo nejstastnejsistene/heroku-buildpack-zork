@@ -1,0 +1,39 @@
+#!/bin/bash
+
+set -eo pipefail
+
+indent() {
+    sed -u 's/^/       /'
+}
+
+mkdir -p "$1" "$2"
+build=$(cd "$1/" && pwd)
+cache=$(cd "$2/" && pwd)
+
+if [ ! -d "$cache/frotz/dfrotz" ]; then
+    echo '-----> Building custom dfrotz'
+    if [ ! -d "$cache/frotz" ]; then
+        git clone git://github.com/nejstastnejsistene/frotz |& indent
+    fi
+    cd frotz
+    git checkout intercept-save-restore |& indent
+    make dumb |& indent
+    cd ..
+fi
+
+if [ ! -d "$build/DATA" ]; then
+    echo '-----> Downloading Zork data files'
+    for i in {1..3}; do
+        name="zork$i.zip"
+        tmp="$cache/$name"
+        if [ ! -f "$tmp" ]; then
+            echo "Downloading $name" | indent
+            curl -sL "http://www.infocom-if.org/downloads/$name" > "$tmp"
+        fi
+        data="DATA/ZORK$i.DAT"
+        if [ ! -f "$build/$data" ]; then
+            echo "Extracting $data" | indent
+            unzip -qd "$build" "$tmp" "$data"
+        fi
+    done
+fi
