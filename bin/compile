@@ -10,14 +10,20 @@ mkdir -p "$1" "$2"
 build=$(cd "$1/" && pwd)
 cache=$(cd "$2/" && pwd)
 
-if [ ! -d "$cache/frotz/dfrotz" ]; then
+bin="$build/.vendor/frotz/bin:$PATH"
+mkdir -p "$bin"
+export PATH="$bin:$PATH"
+
+if [ ! -d "$( which dfrotz )" ]; then
     echo '-----> Building custom dfrotz'
-    if [ ! -d "$cache/frotz" ]; then
-        git clone git://github.com/nejstastnejsistene/frotz |& indent
+    frotzdir="$cache/frotz"
+    if [ ! -d "$frotzdir" ]; then
+        git clone git://github.com/nejstastnejsistene/frotz "$frotzdir" |& indent
     fi
-    cd frotz
+    cd "$frotzdir"
     git checkout intercept-save-restore |& indent
     make dumb |& indent
+    cp dfrotz dfrotz-db.sh "$bin"
     cd ..
 fi
 
@@ -31,9 +37,10 @@ if [ ! -d "$build/DATA" ]; then
             curl -sL "http://www.infocom-if.org/downloads/$name" > "$tmp"
         fi
         data="DATA/ZORK$i.DAT"
-        if [ ! -f "$build/$data" ]; then
+        if [ ! -f "$cache/$data" ]; then
             echo "Extracting $data" | indent
-            unzip -qd "$build" "$tmp" "$data"
+            unzip -qd "$cache" "$tmp" "$data"
         fi
+        cp "$cache/$data" "$build"
     done
 fi
